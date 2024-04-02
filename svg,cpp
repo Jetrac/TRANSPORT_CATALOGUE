@@ -1,0 +1,129 @@
+#include "svg.h"
+
+namespace svg {
+
+    using namespace std::literals;
+
+//-------------------------------------------------
+    void Object::Render(const RenderContext &context) const {
+        context.RenderIndent();
+
+        // Делегируем вывод тега своим подклассам
+        RenderObject(context);
+
+        context.out << std::endl;
+    }
+
+// ---------- Circle ------------------
+
+    Circle &Circle::SetCenter(Point center) {
+        center_ = center;
+        return *this;
+    }
+
+    Circle &Circle::SetRadius(double radius) {
+        radius_ = radius;
+        return *this;
+    }
+
+    void Circle::RenderObject(const RenderContext &context) const {
+        auto &out = context.out;
+        out << "<circle";
+        out << " "sv << "cx"sv << "="sv << "\""sv << center_.x << "\""sv;
+        out << " "sv << "cy"sv << "="sv << "\""sv << center_.y << "\""sv;
+        out << " "sv << "r"sv << "="sv << "\""sv << radius_ << "\""sv;
+        RenderAttrs(context.out);
+        out << "/>"sv;
+    }
+
+// ---------- Polyline ------------------
+    Polyline &Polyline::AddPoint(Point point) {
+        points_.push_back(point);
+        return *this;
+    }
+
+    void Polyline::RenderObject(const RenderContext &context) const {
+        auto &out = context.out;
+        out << "<polyline points="sv;
+        out << "\""sv;
+        if (!points_.empty()) {
+            out << points_[0].x << ',' << points_[0].y;
+            for (size_t i = 1; i < points_.size(); ++i) {
+                out << ' ' << points_[i].x << ',' << points_[i].y;
+            }
+        }
+        out << "\""sv;
+        RenderAttrs(context.out);
+        out << "/>"sv;
+    }
+
+// ---------- Text ------------------
+    Text &Text::SetPosition(Point pos) {
+        pos_ = pos;
+        return *this;
+    }
+
+    Text &Text::SetOffset(Point offset) {
+        offset_ = offset;
+        return *this;
+    }
+
+    Text &Text::SetFontSize(uint32_t font_size) {
+        font_size_ = font_size;
+        return *this;
+    }
+
+    Text &Text::SetFontFamily(std::string font_family) {
+        font_family_ = std::move(font_family);
+        return *this;
+    }
+
+    Text &Text::SetFontWeight(std::string font_weight) {
+        font_weight_ = std::move(font_weight);
+        return *this;
+    }
+
+    Text &Text::SetData(std::string data) {
+        data_ = std::move(data);
+        return *this;
+    }
+
+
+    void Text::RenderObject(const RenderContext &context) const {
+        auto &out = context.out;
+
+        out << "<text"sv;
+        out << " "sv << "x"sv << "="sv << "\""sv << pos_.x << "\""sv;
+        out << " "sv << "y"sv << "="sv << "\""sv << pos_.y << "\""sv;
+        out << " "sv << "dx"sv << "="sv << "\""sv << offset_.x << "\""sv;
+        out << " "sv << "dy"sv << "="sv << "\""sv << offset_.y << "\""sv;
+        out << " "sv << "font-size"sv << "="sv << "\""sv << font_size_ << "\""sv;
+        if (!font_family_.empty()) {
+            out << " "sv << "font-family"sv << "="sv << "\""sv << font_family_ << "\""sv;
+        }
+        if (!font_weight_.empty()) {
+            out << " "sv << "font-weight"sv << "="sv << "\""sv << font_weight_ << "\""sv;
+        }
+        RenderAttrs(context.out);
+        out << ">"sv;
+        out << data_;
+        out << "</text>"sv;
+    }
+
+// ---------- Document ------------------
+    void Document::Render(std::ostream &out) const {
+        out << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
+        out << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
+        for (const auto &object_: objects_) {
+            out << "  "sv;
+            auto object = object_.get();
+            object->Render(out);
+        }
+        out << "</svg>"sv;
+    }
+
+    void Document::AddPtr(std::unique_ptr<Object> &&obj) {
+        objects_.emplace_back(std::move(obj));
+    }
+
+}  // namespace svg

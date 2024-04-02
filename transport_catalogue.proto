@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package proto_transport;
+
+import "map_renderer.proto";
+import "transport_router.proto";
+
+message Coordinates {
+    double lat = 1;
+    double lng = 2;
+}
+
+message Stop {
+    string stop_name = 1;
+    Coordinates coordinates = 2;
+}
+
+message Bus {
+    string bus_name = 1;
+    repeated string bus_route = 2;
+    bool is_roundtrip = 3;
+}
+
+message StopsDistance {
+    string first_stop = 1;
+    string second_stop = 2;
+    int32 distance = 3;
+}
+
+message Catalogue {
+    repeated Bus buses = 1;
+    repeated Stop stops = 2;
+    repeated StopsDistance stops_to_distance = 3;
+    proto_map.RenderSettings render_settings = 4;
+    Router router = 5;
+}
